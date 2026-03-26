@@ -5,7 +5,7 @@ A production-ready, full-stack Student Management web application built with **R
 ---
 
 ## Table of Contents
-
+..
 - [Tech Stack](#tech-stack)
 - [Architecture Overview](#architecture-overview)
 - [Project Structure](#project-structure)
