@@ -91,16 +91,16 @@ jobs:
         run: git config --global --add safe.directory "${{ github.workspace }}"
 
       - name: Stop existing containers (preserve volumes)
-        run: docker-compose down
+        run: docker compose down
         continue-on-error: true
 
       - name: Start services with fresh build
-        run: docker-compose up --build -d
+        run: docker compose up --build -d
 
       - name: Wait for services to be healthy
         run: |
          sleep 15
-         docker-compose ps
+         docker compose ps
 
       - name: Verify application health
         run: |
