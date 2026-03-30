@@ -14,15 +14,7 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - name: Clean locked files
-        run: |
-          $ws = "${{ github.workspace }}"
-          foreach ($dir in '.pytest_cache', '__pycache__', 'selenium\.pytest_cache', 'selenium\__pycache__') {
-            $p = Join-Path $ws $dir
-            if (Test-Path $p) { attrib -r -h -s "$p\*" /s /d 2>$null; Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
-          }
-        working-directory: .
-        continue-on-error: true
+     
 
       - uses: actions/checkout@v4
 
@@ -45,16 +37,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - name: Clean locked files
-        run: |
-          $ws = "${{ github.workspace }}"
-          foreach ($dir in '.pytest_cache', '__pycache__', 'selenium\.pytest_cache', 'selenium\__pycache__') {
-            $p = Join-Path $ws $dir
-            if (Test-Path $p) { attrib -r -h -s "$p\*" /s /d 2>$null; Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
-          }
-        working-directory: .
-        continue-on-error: true
-
+     
       - uses: actions/checkout@v4
 
       - name: Mark workspace as safe directory
@@ -76,14 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test]
     steps:
-      - name: Clean locked files
-        run: |
-          $ws = "${{ github.workspace }}"
-          foreach ($dir in '.pytest_cache', '__pycache__', 'selenium\.pytest_cache', 'selenium\__pycache__') {
-            $p = Join-Path $ws $dir
-            if (Test-Path $p) { attrib -r -h -s "$p\*" /s /d 2>$null; Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
-          }
-        continue-on-error: true
+     
 
       - uses: actions/checkout@v4
 
@@ -91,19 +67,13 @@ jobs:
         run: git config --global --add safe.directory "${{ github.workspace }}"
 
       - name: Build backend image
-        run: |
-          $ErrorActionPreference = 'SilentlyContinue'
-          docker build -t student-app-backend:${{ github.sha }} ./backend 2>&1 | Out-Default
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: docker build -t student-app-backend:${{ github.sha }} ./backend
 
       - name: Build frontend image
-        run: |
-          $ErrorActionPreference = 'SilentlyContinue'
-          docker build -t student-app-frontend:${{ github.sha }} ./frontend 2>&1 | Out-Default
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: docker build -t student-app-frontend:${{ github.sha }} ./frontend
 
       - name: Verify images
-        run: docker images | Select-String "student-app"
+        run: docker images | grep student-app
 
       - name: Clean up old images
         run: docker image prune -f
@@ -113,14 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker-build]
     steps:
-      - name: Clean locked files
-        run: |
-          $ws = "${{ github.workspace }}"
-          foreach ($dir in '.pytest_cache', '__pycache__', 'selenium\.pytest_cache', 'selenium\__pycache__') {
-            $p = Join-Path $ws $dir
-            if (Test-Path $p) { attrib -r -h -s "$p\*" /s /d 2>$null; Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
-          }
-        continue-on-error: true
+     
 
       - uses: actions/checkout@v4
 
@@ -128,23 +91,17 @@ jobs:
         run: git config --global --add safe.directory "${{ github.workspace }}"
 
       - name: Stop existing containers (preserve volumes)
-        run: |
-          $ErrorActionPreference = 'SilentlyContinue'
-          docker-compose down 2>&1 | Out-Default
+        run: docker-compose down
         continue-on-error: true
 
       - name: Start services with fresh build
-        run: |
-          $ErrorActionPreference = 'SilentlyContinue'
-          docker-compose up --build -d 2>&1 | Out-Default
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: docker-compose up --build -d
 
       - name: Wait for services to be healthy
         run: |
-          Start-Sleep -Seconds 15
-          docker-compose ps
+         sleep 15
+         docker-compose ps
 
       - name: Verify application health
         run: |
-          $response = Invoke-WebRequest -Uri http://localhost:8000/api/health -UseBasicParsing
-          if ($response.StatusCode -eq 200) { Write-Host "Backend is healthy" } else { exit 1 }
+          curl -f http://localhost:8000/api/health
